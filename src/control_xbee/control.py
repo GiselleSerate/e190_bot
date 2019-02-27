@@ -7,7 +7,7 @@ import tf
 import math
 import numpy as np
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from nav_msgs.msg import Odometry
 from e190_bot.msg import ir_sensor
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -28,6 +28,12 @@ class botControl:
         # Measured bot parameters
         self.wheel_radius = 0.035
         self.bot_radius = 0.07
+
+        # hardcoded command velocities
+        self.stopBot = Twist()
+        self.stopBot.linear = Vector3(0, 0, 0)
+        self.stopBot.angular = Vector3(0, 0, 0)
+
 
         # setup xbee communication, change ttyUSB0 to the USB port dongle is in
         if (self.robot_mode == "HARDWARE_MODE"):
@@ -65,8 +71,10 @@ class botControl:
         # Sets publishing rate
         self.rate = rospy.Rate(10) # 10hz
         # self.rate = rospy.Rate(5) # 5hz
-        while not rospy.is_shutdown():
-            self.odom_pub();
+
+        odomWorks = True
+        while (not rospy.is_shutdown()) and odomWorks:
+            odomWorks = self.odom_pub();
             self.rate.sleep();
 
     def ir_init(self):
@@ -147,9 +155,12 @@ class botControl:
             command = '$S @'
             self.xbee.tx(dest_addr = self.address, data = command)
             try:
-                update = self.xbee.wait_read_frame()
+                update = self.xbee.wait_read_frame(timeout = 2) # timeout after 2 sec
             except:
-                pass
+                print("Lost connection to odom over xbee.\nStopping bot")
+                self.cmd_vel_callback(self.stopBot)
+                return False
+
 
             data = update['rf_data'].decode().split(' ')[:-1]
             data = [int(x) for x in data]
@@ -214,6 +225,8 @@ class botControl:
             self.log_data();
 
         self.time = rospy.Time.now()
+
+        return True
 
     def ir_cal(self, val):
         """Convert ir sensor data to meters. The effective range of our sensors
