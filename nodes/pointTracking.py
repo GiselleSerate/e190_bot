@@ -6,9 +6,13 @@ import math
 from geometry_msgs.msg import Twist, Vector3
 import tf
 
-# kp = 
-# ka = 
-# kb = 
+# kp = 3.0
+# ka = 0.0
+# kb = -4.0
+
+kp = 1.5
+ka = 0.0
+kb = -2.0
 
 
 def pointTracking():
@@ -16,23 +20,8 @@ def pointTracking():
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     rospy.init_node('pointTracking', anonymous=True)
     listener = tf.TransformListener()
-    # print("inits and stuff finished\n");
-
-
-    # print("broadcaster did a broadcast\n");
-
-    # listener.waitForTransform("/base_link", "/odom", rospy.Time(), rospy.Duration(4.0))
-    
-    # print("waited on baselink to odom\n");
-
-    # listener.waitForTransform("/goal", "/odom", rospy.Time(), rospy.Duration(4.0))
-    
-    # print("waited on goal to odom\n");
-
-    # listener.waitForTransform("/base_link", "/goal", rospy.Time(), rospy.Duration(4.0))
-    # print("waited on baselink to goal\n");
-    rate = rospy.Rate(100.0)
-    rospy.sleep(5)
+    rate = rospy.Rate(200.0)
+    rospy.sleep(5) # TODO: maybe don't need
 
     while not rospy.is_shutdown():
         try:
@@ -40,8 +29,14 @@ def pointTracking():
             listener.waitForTransform("/base_link", "/goal", now, rospy.Duration(4.0))
             (trans,rot) = listener.lookupTransform("/base_link", "/goal", now)
 
-            angular = 4 * math.atan2(trans[1], trans[0])
-            linear = 0.5 * math.sqrt(trans[0] ** 2 + trans[1] ** 2)
+            theta = tf.transformations.euler_from_quaternion(rot)[2]
+
+            rho = math.sqrt(trans[0] ** 2 + trans[1] ** 2)
+            beta = -1 * math.atan2(trans[1], trans[0])
+            alpha = -1 * beta - theta
+
+            angular = ka * alpha + kb * beta
+            linear = kp * rho
 
             cmd = Twist()
             cmd.linear.x = linear
