@@ -5,6 +5,7 @@ from xbee import XBee
 import serial
 import tf
 import math
+import numpy as np
 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -63,6 +64,7 @@ class botControl:
 
         # Sets publishing rate
         self.rate = rospy.Rate(10) # 10hz
+        # self.rate = rospy.Rate(5) # 5hz
         while not rospy.is_shutdown():
             self.odom_pub();
             self.rate.sleep();
@@ -142,10 +144,6 @@ class botControl:
             self.count = self.count + 1
             print(self.count)
 
-            # Save last encoder measurements
-            self.last_encoder_measurementL += self.diffEncoderL
-            self.last_encoder_measurementR += self.diffEncoderR
-
             command = '$S @'
             self.xbee.tx(dest_addr = self.address, data = command)
             try:
@@ -156,28 +154,42 @@ class botControl:
             data = update['rf_data'].decode().split(' ')[:-1]
             data = [int(x) for x in data]
             # Encoder readings as radians: l, r
-            encoder_measurements = [x * math.pi / 720 for x in [data[-1], data[-2]]]
+            # encoder_measurements = [x * math.pi / 720 for x in [data[-1], data[-2]]]
+            # encoder_measurements = [x * math.pi / 720 for x in [data[-2], data[-1]]]
+            # encoder_measurements = [x * math.pi / 720 for x in [data[3], data[4]]]
+            # encoder_measurements = [x * math.pi / 720 for x in [data[4], data[3]]]
+            # self.diffEncoderL = encoder_measurements[0] - self.last_encoder_measurementL
+            # self.diffEncoderR = encoder_measurements[1] - self.last_encoder_measurementR
+
+            encoder_measurementsL = data[4] * np.math.pi / 720.0 # TODO: Until we fix the Teensy code, compensate for switched encoders
+            encoder_measurementsR = data[3] * np.math.pi / 720.0
 
             # Calculate how many radians the encoders have moved since the last odom measurement
-            self.diffEncoderL = encoder_measurements[0] - self.last_encoder_measurementL
-            self.diffEncoderR = encoder_measurements[1] - self.last_encoder_measurementR
+            self.diffEncoderL = encoder_measurementsL - self.last_encoder_measurementL
+            self.diffEncoderR = encoder_measurementsR - self.last_encoder_measurementR
+
+            # Save last encoder measurements
+            # self.last_encoder_measurementL = encoder_measurements[0]
+            # self.last_encoder_measurementR = encoder_measurements[1]
+            self.last_encoder_measurementL = encoder_measurementsL
+            self.last_encoder_measurementR = encoder_measurementsR
 
             # If either measurement is old, reset encoder differences
-            if(self.diffEncoderL > 1000 or self.diffEncoderR > 1000):
+            if(self.diffEncoderL > 3 or self.diffEncoderR > 3 or self.diffEncoderL < -3 or self.diffEncoderR < -3):
                 self.diffEncoderL = 0
                 self.diffEncoderR = 0
 
             # Calculate changes in theta and distance with respect to the robot frame
-            del_theta = ((self.diffEncoderR - self.diffEncoderL) * self.wheel_radius)/(2 * self.bot_radius)
-            del_s = ((self.diffEncoderR + self.diffEncoderL) * self.wheel_radius)/2
+            del_theta = ((self.diffEncoderR - self.diffEncoderL) * self.wheel_radius)/(2.0 * self.bot_radius)
+            del_s = ((self.diffEncoderR + self.diffEncoderL) * self.wheel_radius)/2.0
+
+            self.bot_angle += del_theta/2.0
+            self.bot_angle = self.bot_angle % (2*math.pi) # Loop
 
             # Update x and y with deltas
-            self.Odom.pose.pose.position.x += del_s * math.cos(self.bot_angle + del_theta/2)
-            self.Odom.pose.pose.position.y += del_s * math.sin(self.bot_angle + del_theta/2)
-
+            self.Odom.pose.pose.position.x += del_s * math.cos(self.bot_angle)
+            self.Odom.pose.pose.position.y += del_s * math.sin(self.bot_angle)
             self.Odom.pose.pose.position.z = .0
-            self.bot_angle += del_theta
-            self.bot_angle = self.bot_angle % (2*math.pi) # Loop
             quat = quaternion_from_euler(.0, .0, self.bot_angle)
             self.Odom.pose.pose.orientation.x = quat[0]
             self.Odom.pose.pose.orientation.y = quat[1]
