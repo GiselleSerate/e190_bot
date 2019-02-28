@@ -10,8 +10,12 @@ import tf
 # ka = 0.0
 # kb = -4.0
 
-kp = 1.5
-ka = 0.0
+# kp = 1.5
+# ka = 0.0
+# kb = -2.0
+
+kp = 1
+ka = 1
 kb = -2.0
 
 
@@ -38,12 +42,17 @@ def pointTracking():
             angular = ka * alpha + kb * beta
             linear = kp * rho
 
+            if rho < 0.02:
+                linear = .0
+                angular = .0
+
+
             cmd = Twist()
             cmd.linear.x = linear
             cmd.angular.z = angular
             pub.publish(cmd)
             rate.sleep()
-        except (tf.LookupException, tf.ConnectivityException): 
+        except (tf.LookupException, tf.ConnectivityException):
             pass
 
 if __name__ == '__main__':
