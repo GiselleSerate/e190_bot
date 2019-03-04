@@ -70,7 +70,7 @@ class botControl:
 
         # Sets publishing rate
         self.rate = rospy.Rate(10) # 10hz
-        self.xbeeTimeout = .2 # set an xbee timeout such that we only skip one
+        self.xbeeTimeout = .01 # set an xbee timeout such that we only skip one
                               # or two odom pubs
         # self.rate = rospy.Rate(5) # 5hz
 
