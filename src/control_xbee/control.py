@@ -166,14 +166,7 @@ class botControl:
 
             data = update['rf_data'].decode().split(' ')[:-1]
             data = [int(x) for x in data]
-            # Encoder readings as radians: l, r
-            # encoder_measurements = [x * math.pi / 720 for x in [data[-1], data[-2]]]
-            # encoder_measurements = [x * math.pi / 720 for x in [data[-2], data[-1]]]
-            # encoder_measurements = [x * math.pi / 720 for x in [data[3], data[4]]]
-            # encoder_measurements = [x * math.pi / 720 for x in [data[4], data[3]]]
-            # self.diffEncoderL = encoder_measurements[0] - self.last_encoder_measurementL
-            # self.diffEncoderR = encoder_measurements[1] - self.last_encoder_measurementR
-
+            # Encoder readings as radians:
             encoder_measurementsL = data[4] * np.math.pi / 720.0 # TODO: Until we fix the Teensy code, compensate for switched encoders
             encoder_measurementsR = data[3] * np.math.pi / 720.0
 
@@ -182,8 +175,6 @@ class botControl:
             self.diffEncoderR = encoder_measurementsR - self.last_encoder_measurementR
 
             # Save last encoder measurements
-            # self.last_encoder_measurementL = encoder_measurements[0]
-            # self.last_encoder_measurementR = encoder_measurements[1]
             self.last_encoder_measurementL = encoder_measurementsL
             self.last_encoder_measurementR = encoder_measurementsR
 
