@@ -1,9 +1,5 @@
 <launch>
 	<node pkg="e190_bot" name="control_py" type="control.py"/>
 	<node pkg="e190_bot" name="square_nav" type="robotDoLoop.py"/>
-	<!-- <arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/labs.rviz" /> -->
-    <node pkg="rviz" type="rviz" name="rviz"/>
-    <!-- <node if="$(arg rviz_cfg)" pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)"/> -->
-	<!-- <arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/labs.rviz" /> -->
-	<!-- <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)" /> -->
+	<node pkg="rviz" type="rviz" name="rviz"/>
 </launch>

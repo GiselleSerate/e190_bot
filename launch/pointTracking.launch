@@ -2,5 +2,5 @@
 	<node pkg="e190_bot" name="control" type="control.py"/>
 	<node pkg="e190_bot" name="pTrack" type="pointTracking.py"/>
 	<node pkg="e190_bot" name="subGoal" type="subGoal.py"/>
-  <node pkg="rviz" type="rviz" name="rviz"/>
+	<node pkg="rviz" type="rviz" name="rviz"/>
 </launch>
