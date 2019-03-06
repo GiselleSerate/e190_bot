@@ -14,10 +14,75 @@ import tf
 # ka = 0.0
 # kb = -2.0
 
-kp = 1
-ka = 1
-kb = -2.0
+# kp = 1
+# ka = 1
+# kb = -2.0
 
+# # Strong stability control (assume kb < 0)
+# kp = 0.5
+# ka = 1
+# kb = -0.2
+# # Slow, but it got there. 
+
+# # Inc kp, ka. 
+# kp = 0.7
+# ka = 1.2
+# kb = -0.2
+# # too fast forward
+
+# # dec kp, inc ka. 
+# kp = 0.5
+# ka = 1.5
+# kb = -0.2
+# # doesn't seem to be stable
+
+# # Strong stability control, assuming slides correct
+# kp = 0.5
+# ka = -0.5
+# kb = -0.2
+# # wanders off towards the right instead of going towards goal
+
+# # Normal stability control as suggested in the slides
+# kp = 3
+# ka = 7
+# kb = -1.5
+# # straight line
+
+# # Normal stability control
+# kp = 0.5
+# ka = 1
+# kb = -1.5
+# # 1m to the left but not fwd
+
+# # Normal stability control
+# kp = 0.5
+# ka = 1
+# kb = -3
+# # further backwards than previous
+
+# # Retrying
+# kp = 1
+# ka = 1
+# kb = -2.0
+# # escaping, bye
+
+# # Retrying with smaller kp
+# kp = 0.5
+# ka = 1
+# kb = -2.0
+# # not far enough +x in 1,1,0; almost perf in 1,0,0
+
+# # Retrying with smaller ka
+# kp = 0.5
+# ka = 0.7
+# kb = -2.0
+# # overshooting
+
+# Retrying with smaller kb
+kp = 0.5
+ka = 0.7
+kb = -1.0
+# 
 
 def pointTracking():
     print("in pointTracking\n");
