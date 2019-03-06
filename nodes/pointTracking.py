@@ -78,11 +78,28 @@ import tf
 # kb = -2.0
 # # overshooting
 
-# Retrying with smaller kb
+# # Retrying with smaller kb
+# kp = 0.5
+# ka = 0.7
+# kb = -1.0
+# # Seem like good consts
+
+# # Retrying with larger kp
+# kp = 0.6
+# ka = 0.7
+# kb = -1.0
+# # 
+
+# # Retrying with bigger ka
+# kp = 0.6
+# ka = 0.9
+# kb = -1.0
+# # bad, go back
+
+# Roll back to good
 kp = 0.5
 ka = 0.7
 kb = -1.0
-# 
 
 def pointTracking():
     print("in pointTracking\n");
@@ -90,7 +107,7 @@ def pointTracking():
     rospy.init_node('pointTracking', anonymous=True)
     listener = tf.TransformListener()
     rate = rospy.Rate(200.0)
-    rospy.sleep(5) # TODO: maybe don't need
+    rospy.sleep(5)
 
     while not rospy.is_shutdown():
         try:
