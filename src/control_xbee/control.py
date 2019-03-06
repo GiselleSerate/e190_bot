@@ -196,18 +196,19 @@ class botControl:
             del_theta = ((self.diffEncoderR - self.diffEncoderL) * self.wheel_radius)/(2.0 * self.bot_radius)
             del_s = ((self.diffEncoderR + self.diffEncoderL) * self.wheel_radius)/2.0
 
-            self.bot_angle += del_theta/2.0
-            self.bot_angle = self.bot_angle % (2*math.pi) # Loop
 
             # Update x and y with deltas
-            self.Odom.pose.pose.position.x += del_s * math.cos(self.bot_angle)
-            self.Odom.pose.pose.position.y += del_s * math.sin(self.bot_angle)
+            self.Odom.pose.pose.position.x += del_s * math.cos(self.bot_angle+del_theta/2.0)
+            self.Odom.pose.pose.position.y += del_s * math.sin(self.bot_angle+del_theta/2.0)
             self.Odom.pose.pose.position.z = .0
             quat = quaternion_from_euler(.0, .0, self.bot_angle)
             self.Odom.pose.pose.orientation.x = quat[0]
             self.Odom.pose.pose.orientation.y = quat[1]
             self.Odom.pose.pose.orientation.z = quat[2]
             self.Odom.pose.pose.orientation.w = quat[3]
+
+            self.bot_angle += del_theta
+            self.bot_angle = self.bot_angle % (2*math.pi) # Loop
 
             # https://wiki.ros.org/tf/Tutorials/Writing%20a%20tf%20broadcaster%20%28Python%29
             self.odom_broadcaster.sendTransform(
