@@ -4,7 +4,7 @@ import rospkg
 
 import tf
 
-from road_map_node import PRM_Node 
+from road_map_node import PRM_Node
 
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
@@ -80,7 +80,7 @@ class prm_planning:
 		self.goal_x = Goal.pose.position.x
 		self.goal_y = Goal.pose.position.y
 		self.goal_o = Goal.pose.orientation
-		
+
 		self.start_x = self.current_x
 		self.start_y = self.current_y
 		self.start_o = self.current_o
@@ -132,7 +132,7 @@ class prm_planning:
 
 		self.prm_plan.poses.append(start_pose)
 		self.prm_plan.poses.append(goal_pose)
-		
+
 		print("I have: " + str(len(self.prm_plan.poses)) + " poses in path planned")
 
 
@@ -161,28 +161,45 @@ class prm_planning:
 
 		return grid_i, grid_j, grid_id
 
-	def _collisionDetect(self,x1,y1,x2,y2):
-		#this function is not fully working yet...
-		return False
+	# #convert gridbox edge to position in meters
+	# def grid_to_pos(self,grid_i,grid_j):
+	# 	#pos_x = (grid_i * self.map_res) + self.map.info.origin.position.x;
+	# 	pos_y = (grid_j * self.map_res) + self.map.info.origin.position.y;
+	#
+	# 	return pos_y
+	#
+	# def _collisionDetect(self,x1,y1,x2,y2):
+	# 	m = (y2-y1) / (float)(x2-x1)
+	# 	b = y1/m * x1
+	#
+	# 	gStart = self.pos_to_grid(x1, y1)
+	# 	gEnd = self.pos_to_grid(x2, y2)
+	#
+	# 	# get the range of grid pos
+	# 	i_gPos = range(gStart[0], gEnd[0], 1 if gStart[0] < gEnd[0] else -1)
+	# 	yPos_at_gridlines = map(lambda x:
+	#
+	#
 
-# bresenham alg for line generation, adapted from https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/  
+
+# bresenham alg for line generation, adapted from https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
 def bresenham(x1,y1,x2,y2):
 	line=[]
 
-	m_new = 2 * (y2 - y1)  
-	slope_error_new = m_new - (x2 - x1) 
+	m_new = 2 * (y2 - y1)
+	slope_error_new = m_new - (x2 - x1)
 
 	y=y1
 
 	for x in range(x1,x2+1):
 		line.append([x,y])
-		#print("(",x ,",",y ,")\n")  
-		# Add slope to increment angle formed  
-		slope_error_new =slope_error_new + m_new  
+		#print("(",x ,",",y ,")\n")
+		# Add slope to increment angle formed
+		slope_error_new =slope_error_new + m_new
 
-		# Slope error reached limit, time to  
-		# increment y and update slope error.  
-		if (slope_error_new >= 0):  
+		# Slope error reached limit, time to
+		# increment y and update slope error.
+		if (slope_error_new >= 0):
 			y=y+1
 			slope_error_new =slope_error_new - 2 * (x2 - x1)
 

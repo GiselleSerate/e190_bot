@@ -4,7 +4,7 @@ class PRM_Node:
         self.x = x
         self.y = y
         self.parent = parent
-        self.children = []
+        self.children = children
         self.index = index #frankly, pretty useless if we use strict linked graph
         #Feel free to add other member variables if you think you need!
 
@@ -12,4 +12,4 @@ class PRM_Node:
         self.children.append(childNode)
         #python doesn't have the concept of pointer, it shows drawback here!!!
         #Yes, we like C!
-        childNode.parent = self 
+        childNode.parent = self
