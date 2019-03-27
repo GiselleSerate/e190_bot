@@ -1,0 +1,15 @@
+<launch>
+	<arg name="map_file" default="$(find e190_bot)/params/maps/test_map.yaml"/>
+	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
+
+
+	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" >
+<!-- 		<param name="frame_id" type="string" value="/map"/> -->
+	</node>
+
+	<node name="prm_planning" pkg="e190_bot" type="prm_planning.py" output="screen"/>
+
+	<node pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)"/>
+
+
+</launch>
