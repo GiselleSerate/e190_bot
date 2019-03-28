@@ -12,6 +12,12 @@ kp = 0.5
 ka = 0.7
 kb = -1.0
 
+kp = rospy.get_param("kp", 0.5)
+ka = rospy.get_param("ka", 0.7)
+kb = -rospy.get_param("kb", -1.0)
+
+
+
 def pointTracking():
     print("in pointTracking\n");
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
