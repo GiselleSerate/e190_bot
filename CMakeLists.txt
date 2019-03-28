@@ -54,12 +54,11 @@ add_message_files(
   ir_sensor.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  point_tracking.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
