@@ -1,7 +1,7 @@
 <launch>
-	<param name="kp" value="0.5"/>
-	<param name="ka" value="0.7"/>
-	<param name="kb" value="-1.0"/>
+	<param name="kp" value="1"/>
+	<param name="ka" value="2"/>
+	<param name="kb" value="3"/>
 	<node pkg="e190_bot" name="control" type="control.py"/>
 	<node pkg="e190_bot" name="pTrack" type="pointTracking.py"/>
 	<node pkg="e190_bot" name="subGoal" type="subGoal.py"/>

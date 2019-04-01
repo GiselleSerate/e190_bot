@@ -8,18 +8,14 @@ from std_msgs.msg import Bool
 import tf
 
 # P control constants
-kp = 0.5
-ka = 0.7
-kb = -1.0
-
 kp = rospy.get_param("kp", 0.5)
 ka = rospy.get_param("ka", 0.7)
-kb = -rospy.get_param("kb", -1.0)
+kb = rospy.get_param("kb", -1.0)
 
 
 
 def pointTracking():
-    print("in pointTracking\n");
+    print("in pointTracking")
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     reachPub = rospy.Publisher('/goal_reached', Bool, queue_size=10)
     rospy.init_node('pointTracking', anonymous=True)
@@ -49,9 +45,9 @@ def pointTracking():
             if rho < 0.02:
                 linear = .0
                 angular = .0
-                reached = true
+                reached = True
             else:
-                reached = false
+                reached = False
 
             reachPub.publish(reached)
 
@@ -61,7 +57,7 @@ def pointTracking():
             cmd.angular.z = angular
             pub.publish(cmd)
             rate.sleep()
-        except (tf.LookupException, tf.ConnectivityException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
 if __name__ == '__main__':
