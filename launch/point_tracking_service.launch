@@ -1,0 +1,9 @@
+<launch>
+  <param name="kp" value="3.5"/>
+  <param name="ka" value="2.7"/>
+  <param name="kb" value="4.4"/>
+
+	<node pkg="e190_bot" name="control" type="control.py"/>
+	<node pkg="e190_bot" name="pTrack" type="point_tracking_server.py"/>
+	<node pkg="rviz" type="rviz" name="rviz"/>
+</launch>
