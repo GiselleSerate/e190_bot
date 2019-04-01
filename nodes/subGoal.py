@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import roslib
 
-from e190_bot.srv import * # TODO necessary? idk
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Bool
 
