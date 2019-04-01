@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import rospkg
+import random
 
 import tf
 
@@ -62,6 +63,7 @@ class prm_planning:
 		self.roadmap = []
 		self.start_node = PRM_Node()
 		self.goal_node = PRM_Node()
+		self.randomRes = 0.2
 
 	def map_init(self):
 		rospy.wait_for_service('static_map')
@@ -109,10 +111,24 @@ class prm_planning:
 		self.current_o.z = quat[2]
 		self.current_o.w = quat[3]
 
+	def create_new_node(self, base_node):
+		collision = True
+
+		while(collision):
+			randX = random.uniform(-self.randomRes, self.randomRes)
+			randY = random.uniform(-self.randomRes, self.randomRes)
+
+			new_node = PRM_Node(x=base_node.x+randX,y=base_node.y+randY,parent=base_node)
+			collision = self.collisionDetect(base_node.x, base_node.y, new_node.x, base_node.y)
+
+		return new_node
 
 	def plan_path(self):
 		# Core function! modify as you wish! Here is only a demo that yield definitely wrong thing
 		# Here is an example how do you deal with ROS nav_msgs/Path
+
+		nodes = []
+
 		start_pose = PoseStamped()
 		start_pose.header.frame_id = "map"
 		start_pose.pose.position.x = self.start_x
@@ -129,58 +145,50 @@ class prm_planning:
 
 		goal_pose.pose.orientation = self.goal_o
 
+		nodes.append(PRM_Node(x=start_pose.pose.position.x, y=start_pose.pose.position.y))
 
-		self.prm_plan.poses.append(start_pose)
-		self.prm_plan.poses.append(goal_pose)
+		pathToGoal = self.collisionDetect(self.start_x, self.start_y, self.goal_x, self.goal_y)
+		while(not pathToGoal):
+			new_node = self.create_new_node(nodes[random.randint(0, len(nodes)-1)])
+			nodes[-1].addChild(new_node)
+			nodes.append(new_node)
+			pathToGoal = self.collisionDetect(new_node.x, new_node.y, self.goal_x, self.goal_y)
+
+		# search
+		self.prm_plan.poses.insert(0, goal_pose)
+		curr_node = new_node
+		while(curr_node.parent != None):
+			self.prm_plan.poses.insert(0, curr_node.pose())
+		self.prm_plan.poses.insert(0, start_pose)
 
 		print("I have: " + str(len(self.prm_plan.poses)) + " poses in path planned")
 
-
-		# Here is a hint that how you deal "topological" prm_node
-		self.start_node.x = self.start_x
-		self.start_node.y = self.start_y
-		self.start_node.index = 0
-
-		self.goal_node.x = self.goal_x
-		self.goal_node.y = self.goal_y
-		self.goal_node.index = 1
-
-		my_new_node = PRM_Node(x=.7,y=.6,parent=self.start_node,index=2) #This (.7,.6) is randomly generated
-
-		self.start_node.addChild(my_new_node)
-		my_new_node.addChild(self.goal_node)
-
-		print("The last node's index is: " + str(my_new_node.index) + ", you serious? ")
-
 	#convert position in meter to map grid id, return grid_x, grid_y and their 1d grid_id
 	def pos_to_grid(self,poseX,poseY):
-		grid_i = (int)(poseX - self.map.info.origin.position.x) / self.map_res;
-		grid_j = (int)(poseY - self.map.info.origin.position.y) / self.map_res;
+		grid_i = int(round((poseX - self.map.info.origin.position.x) / self.map_res));
+		grid_j = int(round((poseY - self.map.info.origin.position.y) / self.map_res));
 
 		grid_id = grid_j * self.map_width + grid_i
 
 		return grid_i, grid_j, grid_id
 
-	# #convert gridbox edge to position in meters
-	# def grid_to_pos(self,grid_i,grid_j):
-	# 	#pos_x = (grid_i * self.map_res) + self.map.info.origin.position.x;
-	# 	pos_y = (grid_j * self.map_res) + self.map.info.origin.position.y;
-	#
-	# 	return pos_y
-	#
-	# def _collisionDetect(self,x1,y1,x2,y2):
-	# 	m = (y2-y1) / (float)(x2-x1)
-	# 	b = y1/m * x1
-	#
-	# 	gStart = self.pos_to_grid(x1, y1)
-	# 	gEnd = self.pos_to_grid(x2, y2)
-	#
-	# 	# get the range of grid pos
-	# 	i_gPos = range(gStart[0], gEnd[0], 1 if gStart[0] < gEnd[0] else -1)
-	# 	yPos_at_gridlines = map(lambda x:
-	#
-	#
 
+	#straight line collision detection, all inputs unit are in meter
+	def collisionDetect(self,x1,y1,x2,y2):
+		grid_i1, grid_j1, grid_id1 = self.pos_to_grid(x1, y1)
+		grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
+
+		# print ("Check line between: (%d, %d) and (%d, %d)" % (grid_i1, grid_j1, grid_i2, grid_j2))
+		line = bresenham(grid_i1, grid_j1, grid_i2, grid_j2)
+		for k in range(0,len(line)):
+			# print("Check map gird: " + str(line[k][0]) + " " + str(line[k][1]))
+			# print(self.map.data[line[k][1] * self.map_width + line[k][0]])
+
+			#Map value 0 - 100
+			if(self.map.data[line[k][1] * self.map_width + line[k][0]]>85):
+				return False
+
+		return True
 
 # bresenham alg for line generation, adapted from https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
 def bresenham(x1,y1,x2,y2):
