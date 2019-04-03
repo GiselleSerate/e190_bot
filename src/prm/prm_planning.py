@@ -154,16 +154,42 @@ class prm_planning:
 		pathToGoal = self.collisionDetect(self.start_x, self.start_y, self.goal_x, self.goal_y)
 		while(not pathToGoal):
 			new_node = self.create_new_node(nodes[random.randint(0, len(nodes)-1)])
+			new_node.index = len(nodes)
 			nodes[-1].addChild(new_node)
 			nodes.append(new_node)
 			pathToGoal = self.collisionDetect(new_node.x, new_node.y, self.goal_x, self.goal_y)
 		print("Found path to goal!")
 
+		print("Optimizing")
+		# optimization
+		short_cut_index = 0
+		last_node_index = len(nodes) - 1
+		while (short_cut_index != last_node_index):
+			curr_node_index = last_node_index
+			short_cut_node = nodes[short_cut_index]
+			while True:
+				curr_node = nodes[curr_node_index]
+				if (curr_node.parent.index == short_cut_index):
+					short_cut_index = curr_node.index
+					break
+
+				# check collision
+				is_short_cut = self.collisionDetect(short_cut_node.x, short_cut_node.y, curr_node.x, curr_node.y)
+				if (is_short_cut):
+					print("Optimization found!")
+					short_cut_node.addChild(curr_node)
+					short_cut_index = curr_node.index
+					break
+
+				# update indices
+				curr_node_index = curr_node.parent.index
+		print("Done optimizing")
+
 		# search
 		self.prm_plan.poses.insert(0, goal_pose)
 		curr_node = nodes[-1]
 		print(len(nodes))
-		print(curr_node.parent);
+		print(curr_node.parent)
 		while(curr_node.parent != None):
 			self.prm_plan.poses.insert(0, curr_node.pose())
 			curr_node = curr_node.parent
