@@ -190,28 +190,64 @@ class prm_planning:
 
 		return True
 
-# bresenham alg for line generation, adapted from https://www.geeksforgeeks.org/bresenhams-line-generation-algorithm/
-def bresenham(x1,y1,x2,y2):
-	line=[]
+# bresenham algorithm for line generation, from http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm
+def bresenham(x1, y1, x2, y2):
+    """Bresenham's Line Algorithm
+    Produces a list of tuples from start and end
 
-	m_new = 2 * (y2 - y1)
-	slope_error_new = m_new - (x2 - x1)
+    >>> points1 = get_line((0, 0), (3, 4))
+    >>> points2 = get_line((3, 4), (0, 0))
+    >>> assert(set(points1) == set(points2))
+    >>> print points1
+    [(0, 0), (1, 1), (1, 2), (2, 3), (3, 4)]
+    >>> print points2
+    [(3, 4), (2, 3), (1, 2), (1, 1), (0, 0)]
+    """
+    # Setup initial conditions
 
-	y=y1
+    dx = x2 - x1
+    dy = y2 - y1
 
-	for x in range(x1,x2+1):
-		line.append([x,y])
-		#print("(",x ,",",y ,")\n")
-		# Add slope to increment angle formed
-		slope_error_new =slope_error_new + m_new
+    # Determine how steep the line is
+    is_steep = abs(dy) > abs(dx)
 
-		# Slope error reached limit, time to
-		# increment y and update slope error.
-		if (slope_error_new >= 0):
-			y=y+1
-			slope_error_new =slope_error_new - 2 * (x2 - x1)
+    # Rotate line
+    if is_steep:
+        x1, y1 = y1, x1
+        x2, y2 = y2, x2
 
-	return line
+    # Swap start and end points if necessary and store swap state
+    swapped = False
+    if x1 > x2:
+        x1, x2 = x2, x1
+        y1, y2 = y2, y1
+        swapped = True
+
+    # Recalculate differentials
+    dx = x2 - x1
+    dy = y2 - y1
+
+    # Calculate error
+    error = int(dx / 2.0)
+    ystep = 1 if y1 < y2 else -1
+
+    # Iterate over bounding box generating points between start and end
+    y = y1
+    points = []
+    for x in range(x1, x2 + 1):
+        coord = (y, x) if is_steep else (x, y)
+        points.append(coord)
+        error -= abs(dy)
+        if error < 0:
+            y += ystep
+            error += dx
+
+    # Reverse the list if the coordinates were swapped
+    if swapped:
+        points.reverse()
+
+    # print points
+    return points
 
 
 if __name__ == '__main__':
