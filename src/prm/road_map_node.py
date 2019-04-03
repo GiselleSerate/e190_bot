@@ -2,6 +2,8 @@ from tf.transformations import quaternion_from_euler
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
 
+import math
+
 class PRM_Node:
 
     def __init__(self, x = 0, y = 0, parent = None, children = [], index = 0):
@@ -25,9 +27,11 @@ class PRM_Node:
         pose.pose.position.y = self.y
         pose.pose.position.z = 0
 
-        quat = quaternion_from_euler(.0, .0, Math.atan2(self.y-self.parent.y, self.x-self.parent.x))
+        quat = quaternion_from_euler(.0, .0, math.atan2(self.y-self.parent.y, self.x-self.parent.x))
         pose.pose.orientation = Quaternion()
         pose.pose.orientation.x = quat[0]
         pose.pose.orientation.y = quat[1]
         pose.pose.orientation.z = quat[2]
         pose.pose.orientation.w = quat[3]
+
+        return pose

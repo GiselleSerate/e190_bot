@@ -14,6 +14,7 @@ from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 
+import math
 
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
@@ -63,7 +64,7 @@ class prm_planning:
 		self.roadmap = []
 		self.start_node = PRM_Node()
 		self.goal_node = PRM_Node()
-		self.randomRes = 0.2
+		self.randomRes = 0.5
 
 	def map_init(self):
 		rospy.wait_for_service('static_map')
@@ -112,14 +113,16 @@ class prm_planning:
 		self.current_o.w = quat[3]
 
 	def create_new_node(self, base_node):
-		collision = True
+		collisionFree = False
 
-		while(collision):
+		# print("[")
+		while(not collisionFree):
 			randX = random.uniform(-self.randomRes, self.randomRes)
 			randY = random.uniform(-self.randomRes, self.randomRes)
 
 			new_node = PRM_Node(x=base_node.x+randX,y=base_node.y+randY,parent=base_node)
-			collision = self.collisionDetect(base_node.x, base_node.y, new_node.x, base_node.y)
+			collisionFree = self.collisionDetect(base_node.x, base_node.y, new_node.x, base_node.y)
+		# print("]")
 
 		return new_node
 
@@ -147,18 +150,23 @@ class prm_planning:
 
 		nodes.append(PRM_Node(x=start_pose.pose.position.x, y=start_pose.pose.position.y))
 
+		print("Starting to create nodes")
 		pathToGoal = self.collisionDetect(self.start_x, self.start_y, self.goal_x, self.goal_y)
 		while(not pathToGoal):
 			new_node = self.create_new_node(nodes[random.randint(0, len(nodes)-1)])
 			nodes[-1].addChild(new_node)
 			nodes.append(new_node)
 			pathToGoal = self.collisionDetect(new_node.x, new_node.y, self.goal_x, self.goal_y)
+		print("Found path to goal!")
 
 		# search
 		self.prm_plan.poses.insert(0, goal_pose)
-		curr_node = new_node
+		curr_node = nodes[-1]
+		print(len(nodes))
+		print(curr_node.parent);
 		while(curr_node.parent != None):
 			self.prm_plan.poses.insert(0, curr_node.pose())
+			curr_node = curr_node.parent
 		self.prm_plan.poses.insert(0, start_pose)
 
 		print("I have: " + str(len(self.prm_plan.poses)) + " poses in path planned")
@@ -174,6 +182,7 @@ class prm_planning:
 
 
 	#straight line collision detection, all inputs unit are in meter
+	# Returns True if collision free.
 	def collisionDetect(self,x1,y1,x2,y2):
 		grid_i1, grid_j1, grid_id1 = self.pos_to_grid(x1, y1)
 		grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
