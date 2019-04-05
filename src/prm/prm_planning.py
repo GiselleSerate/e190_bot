@@ -64,7 +64,8 @@ class prm_planning:
 		self.roadmap = []
 		self.start_node = PRM_Node()
 		self.goal_node = PRM_Node()
-		self.randomRes = 0.5
+		self.randomRes = 1
+		self.node_limit = 1000
 
 	def map_init(self):
 		rospy.wait_for_service('static_map')
@@ -83,6 +84,11 @@ class prm_planning:
 		self.goal_x = Goal.pose.position.x
 		self.goal_y = Goal.pose.position.y
 		self.goal_o = Goal.pose.orientation
+
+		# if the goal is inside an obstacle, stop
+		if not self.pointCollisionDetect(self.goal_x, self.goal_y):
+			print("Goal inside an obstacle, not finding a path to it.")
+			return
 
 		self.start_x = self.current_x
 		self.start_y = self.current_y
@@ -115,14 +121,14 @@ class prm_planning:
 	def create_new_node(self, base_node):
 		collisionFree = False
 
-		# print("[")
 		while(not collisionFree):
 			randX = random.uniform(-self.randomRes, self.randomRes)
 			randY = random.uniform(-self.randomRes, self.randomRes)
+			newX = base_node.x+randX
+			newY = base_node.y+randY
+			collisionFree = self.collisionDetect(base_node.x, base_node.y, newX, newY)
 
-			new_node = PRM_Node(x=base_node.x+randX,y=base_node.y+randY,parent=base_node)
-			collisionFree = self.collisionDetect(base_node.x, base_node.y, new_node.x, base_node.y)
-		# print("]")
+		new_node = PRM_Node(x=newX,y=newY,parent=base_node)
 
 		return new_node
 
@@ -148,20 +154,35 @@ class prm_planning:
 
 		goal_pose.pose.orientation = self.goal_o
 
-		nodes.append(PRM_Node(x=start_pose.pose.position.x, y=start_pose.pose.position.y))
+		last_waypoint_x = self.start_x
+		last_waypoint_y = self.start_y
+
+		if (len(self.prm_plan.poses) != 0):
+			last_waypoint_x = self.prm_plan.poses[-1].pose.position.x
+			last_waypoint_y = self.prm_plan.poses[-1].pose.position.y
+
+		nodes.append(PRM_Node(x=last_waypoint_x, y=last_waypoint_y))
+
 
 		print("Starting to create nodes")
-		pathToGoal = self.collisionDetect(self.start_x, self.start_y, self.goal_x, self.goal_y)
+		pathToGoal = self.collisionDetect(last_waypoint_x, last_waypoint_y, self.goal_x, self.goal_y)
 		while(not pathToGoal):
-			new_node = self.create_new_node(nodes[random.randint(0, len(nodes)-1)])
+			rand_node_index = random.randint(0, len(nodes)-1)
+			new_node = self.create_new_node(nodes[rand_node_index])
 			new_node.index = len(nodes)
-			nodes[-1].addChild(new_node)
+			nodes[rand_node_index].addChild(new_node)
 			nodes.append(new_node)
 			pathToGoal = self.collisionDetect(new_node.x, new_node.y, self.goal_x, self.goal_y)
+
+			# timeout error handling
+			if (len(nodes) > self.node_limit):
+				print("Could not find path to Goal.")
+				return
+
 		print("Found path to goal!")
 
-		print("Optimizing")
 		# optimization
+		print("Optimizing")
 		short_cut_index = 0
 		last_node_index = len(nodes) - 1
 		while (short_cut_index != last_node_index):
@@ -176,7 +197,6 @@ class prm_planning:
 				# check collision
 				is_short_cut = self.collisionDetect(short_cut_node.x, short_cut_node.y, curr_node.x, curr_node.y)
 				if (is_short_cut):
-					print("Optimization found!")
 					short_cut_node.addChild(curr_node)
 					short_cut_index = curr_node.index
 					break
@@ -186,14 +206,16 @@ class prm_planning:
 		print("Done optimizing")
 
 		# search
-		self.prm_plan.poses.insert(0, goal_pose)
+		if (len(self.prm_plan.poses) == 0):
+			self.prm_plan.poses = [start_pose]
+
+		offset = len(self.prm_plan.poses)
+
 		curr_node = nodes[-1]
-		print(len(nodes))
-		print(curr_node.parent)
 		while(curr_node.parent != None):
-			self.prm_plan.poses.insert(0, curr_node.pose())
+			self.prm_plan.poses.insert(offset, curr_node.pose())
 			curr_node = curr_node.parent
-		self.prm_plan.poses.insert(0, start_pose)
+		self.prm_plan.poses.append(goal_pose)
 
 		print("I have: " + str(len(self.prm_plan.poses)) + " poses in path planned")
 
@@ -210,8 +232,12 @@ class prm_planning:
 	#straight line collision detection, all inputs unit are in meter
 	# Returns True if collision free.
 	def collisionDetect(self,x1,y1,x2,y2):
+		if not (self.pointCollisionDetect(x1, y1) and self.pointCollisionDetect(x2, y2)):
+			return False
+
 		grid_i1, grid_j1, grid_id1 = self.pos_to_grid(x1, y1)
 		grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
+
 
 		# print ("Check line between: (%d, %d) and (%d, %d)" % (grid_i1, grid_j1, grid_i2, grid_j2))
 		line = bresenham(grid_i1, grid_j1, grid_i2, grid_j2)
@@ -224,6 +250,14 @@ class prm_planning:
 				return False
 
 		return True
+
+	# returns True if the space is free
+	def pointCollisionDetect(self, x, y):
+		# If out of bounds, return immediately
+		if(x < 0 or x > self.map_res * self.map_width or y < 0 or y > self.map_res * self.map_height):
+			return False
+		grid_i, grid_j, grid_id = self.pos_to_grid(x, y)
+		return self.map.data[grid_id]<=85
 
 # bresenham algorithm for line generation, from http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm
 def bresenham(x1, y1, x2, y2):

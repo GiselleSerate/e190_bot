@@ -1,5 +1,5 @@
 <launch>
-	<arg name="map_file" default="$(find e190_bot)/params/maps/test_map.yaml"/>
+	<arg name="map_file" default="$(find e190_bot)/params/maps/complex_map.yaml"/>
 	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
 
 
