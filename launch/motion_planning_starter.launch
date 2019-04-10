@@ -1,5 +1,5 @@
 <launch>
-	<arg name="map_file" default="$(find e190_bot)/params/maps/complex_map.yaml"/>
+	<arg name="map_file" default="$(find e190_bot)/params/maps/map_demo.yaml"/>
 	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
 
 
@@ -7,7 +7,7 @@
 <!-- 		<param name="frame_id" type="string" value="/map"/> -->
 	</node>
 
-	<!-- <node name="prm_planning" pkg="e190_bot" type="prm_planning.py" output="screen"/> -->
+	<node name="prm_planning" pkg="e190_bot" type="prm_planning.py" output="screen"/>
 
 	<node pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)"/>
 

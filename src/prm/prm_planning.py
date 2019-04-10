@@ -65,7 +65,7 @@ class prm_planning:
 		self.start_node = PRM_Node()
 		self.goal_node = PRM_Node()
 		self.randomRes = 1
-		self.node_limit = 1000
+		self.node_limit = 10000
 
 	def map_init(self):
 		rospy.wait_for_service('static_map')
@@ -167,7 +167,7 @@ class prm_planning:
 		print("Starting to create nodes")
 		pathToGoal = self.collisionDetect(last_waypoint_x, last_waypoint_y, self.goal_x, self.goal_y)
 		while(not pathToGoal):
-			rand_node_index = random.randint(0, len(nodes)-1)
+			rand_node_index = int(random.triangular(0, len(nodes)-1, len(nodes)-1))
 			new_node = self.create_new_node(nodes[rand_node_index])
 			new_node.index = len(nodes)
 			nodes[rand_node_index].addChild(new_node)
@@ -221,8 +221,8 @@ class prm_planning:
 
 	#convert position in meter to map grid id, return grid_x, grid_y and their 1d grid_id
 	def pos_to_grid(self,poseX,poseY):
-		grid_i = int(round((poseX - self.map.info.origin.position.x) / self.map_res));
-		grid_j = int(round((poseY - self.map.info.origin.position.y) / self.map_res));
+		grid_i = int((poseX - self.map.info.origin.position.x) / self.map_res);
+		grid_j = int((poseY - self.map.info.origin.position.y) / self.map_res);
 
 		grid_id = grid_j * self.map_width + grid_i
 
@@ -254,7 +254,7 @@ class prm_planning:
 	# returns True if the space is free
 	def pointCollisionDetect(self, x, y):
 		# If out of bounds, return immediately
-		if(x < 0 or x > self.map_res * self.map_width or y < 0 or y > self.map_res * self.map_height):
+		if(x < 0 or x >= self.map_res * self.map_width or y < 0 or y >= self.map_res * self.map_height):
 			return False
 		grid_i, grid_j, grid_id = self.pos_to_grid(x, y)
 		return self.map.data[grid_id]<=85
