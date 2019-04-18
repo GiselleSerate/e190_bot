@@ -53,8 +53,13 @@ class prm_planning:
 		self.current_o.z = quat[2]
 		self.current_o.w = quat[3]
 
-		self.rate = rospy.Rate(2)
+		broadcaster = tf.TransformBroadcaster()
+
+		self.rate = rospy.Rate(10)
 		while not rospy.is_shutdown():
+			broadcaster.sendTransform((0,0,0),
+                quaternion_from_euler(0, 0, 0),
+                rospy.Time.now(), "/map", "/odom")
 			self.rate.sleep();
 
 

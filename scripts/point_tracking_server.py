@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 import math
-from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Twist, Vector3, Pose
 from e190_bot.srv import *
 import tf
 
@@ -16,14 +16,11 @@ def handle_point_tracking(req):
     orientation = req.goal.orientation
 
     rate = rospy.Rate(200.0)
-    rospy.sleep(10)
 
     # get params for proportional control
     kp = rospy.get_param('kp', 0.5)
     kb = rospy.get_param('kb', -1.0)
     ka = rospy.get_param('ka', 0.7)
-
-    print("hit")
 
     while not rospy.is_shutdown():
         try:
