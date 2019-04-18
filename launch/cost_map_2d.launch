@@ -1,0 +1,23 @@
+<!--Demo of costmap -->
+<!-- From: https://github.com/ros-planning/navigation/tree/melodic-devel/costmap_2d/launch-->
+
+<launch>
+	<arg name="map_file" default="$(find e190_bot)/params/maps/map_demo.yaml"/>
+	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
+
+	<node pkg="tf" type="static_transform_publisher" name="map_odom" args=".25 .25 0 0 0 0 /map /odom 100"/> 
+
+	<!--comment this line out for your actual navigation-->
+	<node pkg="tf" type="static_transform_publisher" name="odom_baselink" args="0 0 0 0 0 0 /odom /base_link 100"/> 
+
+	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" >
+<!-- 		<param name="frame_id" type="string" value="/map"/> -->
+	</node>
+
+	<node pkg="costmap_2d" name="costmap_2d" type="costmap_2d_node" output="screen">
+ 		<rosparam file="$(find e190_bot)/params/navstack/example_params.yaml" command="load" ns="costmap" />
+	</node>
+
+	<node pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)"/>
+
+</launch>
