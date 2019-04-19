@@ -58,6 +58,7 @@ add_message_files(
 add_service_files(
   FILES
   point_tracking.srv
+  set_goal.srv
 )
 
 ## Generate actions in the 'action' folder

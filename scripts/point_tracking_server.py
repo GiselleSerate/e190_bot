@@ -5,67 +5,78 @@ import numpy as np
 import math
 from geometry_msgs.msg import Twist, Vector3, Pose
 from e190_bot.srv import *
+from tf.transformations import quaternion_from_euler
 import tf
 
-def handle_point_tracking(req):
-    # initialize stuff
-    listener = tf.TransformListener()
-    broadcaster = tf.TransformBroadcaster()
+class point_tracking_server():
+    def __init__(self):
+        rospy.init_node('point_tracking_server')
 
-    pos = req.goal.position
-    orientation = req.goal.orientation
+        self.listener = tf.TransformListener()
+        self.broadcaster = tf.TransformBroadcaster()
 
-    rate = rospy.Rate(200.0)
+        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
-    # get params for proportional control
-    kp = rospy.get_param('kp', 0.5)
-    kb = rospy.get_param('kb', -1.0)
-    ka = rospy.get_param('ka', 0.7)
+        self.rate = rospy.Rate(200.0)
 
-    while not rospy.is_shutdown():
-        try:
-            now = rospy.Time.now()
+        self.position = (0,0,0)
+        self.orientation = quaternion_from_euler(0, 0, 0)
 
+        pts = rospy.Service('point_tracking', point_tracking, self.handle_point_tracking)
+
+        while not rospy.is_shutdown():
             # first broadcast goal transform
-            broadcaster.sendTransform((pos.x, pos.y, pos.z),
-                (orientation.x, orientation.y, orientation.z, orientation.w),
+            self.broadcaster.sendTransform(self.position,
+                self.orientation,
                 rospy.Time.now(), "/goal", "/odom")
+            self.rate.sleep();
 
-            # Get transform from tf
-            listener.waitForTransform("/base_link", "/goal", now, rospy.Duration(4.0))
-            (trans,rot) = listener.lookupTransform("/base_link", "/goal", now)
+    def handle_point_tracking(self, req):
+        pos = req.goal.position
+        orientation = req.goal.orientation
 
-            # Get P control distances and angles
-            theta = tf.transformations.euler_from_quaternion(rot)[2]
-            rho = math.sqrt(trans[0] ** 2 + trans[1] ** 2)
-            beta = -1 * math.atan2(trans[1], trans[0])
-            alpha = -1 * beta - theta
+        self.position = (pos.x, pos.y, pos.z)
+        self.orientation = (orientation.x, orientation.y, orientation.z, orientation.w)
 
-            # Calculate velocities
-            angular = ka * alpha + kb * beta
-            linear = kp * rho
+        # get params for proportional control
+        kp = rospy.get_param('kp', 0.5)
+        kb = rospy.get_param('kb', -1.0)
+        ka = rospy.get_param('ka', 0.7)
 
-            # Stop driving when close enough to goal
-            if rho < 0.02:
-                linear = .0
-                angular = .0
-                return point_trackingResponse(True)
+        while not rospy.is_shutdown():
+            try:
+                now = rospy.Time.now()
 
-            # Publish velocity to control.py
-            cmd = Twist()
-            cmd.linear.x = linear
-            cmd.angular.z = angular
-            print("sending command: %s" % (cmd))
-            pub.publish(cmd)
-            rate.sleep()
-        except (tf.LookupException, tf.ConnectivityException):
-            return point_trackingResponse(False)
+                # Get transform from tf
+                self.listener.waitForTransform("/base_link", "/goal", now, rospy.Duration(4.0))
+                (trans,rot) = self.listener.lookupTransform("/base_link", "/goal", now)
 
-def point_tracking_server():
-    rospy.init_node('point_tracking_server')
-    pts = rospy.Service('point_tracking', point_tracking, handle_point_tracking)
-    print("Ready to track points.")
-    rospy.spin()
+                # Get P control distances and angles
+                theta = tf.transformations.euler_from_quaternion(rot)[2]
+                rho = math.sqrt(trans[0] ** 2 + trans[1] ** 2)
+                beta = -1 * math.atan2(trans[1], trans[0])
+                alpha = -1 * beta - theta
+
+                # Calculate velocities
+                angular = ka * alpha + kb * beta
+                linear = kp * rho
+
+                # Stop driving when close enough to goal
+                if rho < 0.02:
+                    linear = .0
+                    angular = .0
+                    return point_trackingResponse(True)
+
+                # Publish velocity to control.py
+                cmd = Twist()
+                cmd.linear.x = linear
+                cmd.angular.z = angular
+                print("sending command: %s" % (cmd))
+                self.pub.publish(cmd)
+                self.rate.sleep()
+            except (tf.LookupException, tf.ConnectivityException):
+                return point_trackingResponse(False)
+
 
 if __name__ == '__main__':
     point_tracking_server()

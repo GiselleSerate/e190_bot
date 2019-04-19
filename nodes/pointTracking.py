@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 import math
 from geometry_msgs.msg import Twist, Vector3
+from std_msgs.msg import Bool
 import tf
 
 # P control constants
@@ -14,10 +15,15 @@ kb = -1.0
 def pointTracking():
     print("in pointTracking\n");
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    reachedPub = rospy.Publisher('/reached_goal', Bool, queue_size=10)
     rospy.init_node('pointTracking', anonymous=True)
     listener = tf.TransformListener()
     rate = rospy.Rate(200.0)
     rospy.sleep(5)
+
+    reachedBool = Bool();
+    reachedBool.data = True
+
 
     while not rospy.is_shutdown():
         try:
@@ -41,6 +47,7 @@ def pointTracking():
             if rho < 0.02:
                 linear = .0
                 angular = .0
+                reachedPub.publish(reachedBool)
 
             # Publish velocity to control.py
             cmd = Twist()

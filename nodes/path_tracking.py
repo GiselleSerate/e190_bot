@@ -20,14 +20,14 @@ class path_tracking():
     def plan_callback(self, plan):
         print("reached plan callback")
         # Make sure service is available
-        rospy.wait_for_service('point_tracking')
+        rospy.wait_for_service('set_goal')
         try:
-            pointTracking = rospy.ServiceProxy('point_tracking', point_tracking)
+            setGoal = rospy.ServiceProxy('set_goal', set_goal)
 
             for pose in plan.poses:
                 resp = False
                 while(not resp):
-                    resp = pointTracking(pose.pose)
+                    resp = setGoal(pose.pose)
 
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
