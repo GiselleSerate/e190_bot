@@ -43,11 +43,14 @@ def pointTracking():
             angular = ka * alpha + kb * beta
             linear = kp * rho
 
+            reachedBool.data = False
             # Stop driving when close enough to goal
-            if rho < 0.02:
+            if rho < 0.10:
                 linear = .0
                 angular = .0
-                reachedPub.publish(reachedBool)
+                reachedBool.data = True
+            reachedPub.publish(reachedBool)
+
 
             # Publish velocity to control.py
             cmd = Twist()
@@ -57,6 +60,7 @@ def pointTracking():
             rate.sleep()
         except (tf.LookupException, tf.ConnectivityException):
             pass
+
 
 if __name__ == '__main__':
     try:

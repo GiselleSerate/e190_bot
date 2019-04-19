@@ -24,7 +24,7 @@ class set_goal_server():
 
 
         while not rospy.is_shutdown():
-            broadcaster.sendTransform(self.position, self.orientation, rospy.Time.now(), "/goal", "/odom")
+            self.broadcaster.sendTransform(self.position, self.orientation, rospy.Time.now(), "/goal", "/odom")
             self.rate.sleep()
 
 
@@ -34,6 +34,8 @@ class set_goal_server():
         orientation = req.goal.orientation
         self.position = (pos.x, pos.y, pos.z)
         self.orientation = (orientation.x, orientation.y, orientation.z, orientation.w)
+
+        rospy.sleep(0.5)
 
         while not self.reached:
             self.rate.sleep()
