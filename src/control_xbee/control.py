@@ -92,11 +92,30 @@ class botControl:
         self.Odom.child_frame_id = "/base_link"
         self.odom_broadcaster = tf.TransformBroadcaster()
         self.encoder_resolution = 1.0/1440.0
-        self.last_encoder_measurementL = 0
-        self.last_encoder_measurementR = 0
         self.diffEncoderL = 0
         self.diffEncoderR = 0
+        self.last_encoder_measurementL = 0
+        self.last_encoder_measurementR = 0
         self.bot_angle = 0
+
+        self.isFirstTime = True
+
+        # command = '$S @'
+        # self.xbee.tx(dest_addr = self.address, data = command)
+        # gotFirstFrame = False
+        # while(not gotFirstFrame):
+        #     try:
+        #         update = self.xbee.wait_read_frame(self.xbeeTimeout)
+        #         gotFirstFrame = True
+        #     except:
+        #         print("Lost connection to odom over xbee.\nRetrying")
+        #         gotFirstFrame = False
+
+        # data = update['rf_data'].decode().split(' ')[:-1]
+        # data = [int(x) for x in data]
+        # # Encoder readings as radians:
+        # self.last_encoder_measurementL = data[4] * np.math.pi / 720.0 # TODO: Until we fix the Teensy code, compensate for switched encoders
+        # self.last_encoder_measurementR = data[3] * np.math.pi / 720.0
 
     def log_init(self,data_logging=False,file_name="log.txt"):
         """Initializes logging of key events."""
@@ -109,17 +128,20 @@ class botControl:
         """Takes in left and right angular velocities of wheels and outputs
         left and right PWM values."""
         # Coefficients as calibrated
-        LPWM = int(8.52*abs(LAvel)+6.36)
-        RPWM = int(8.61*abs(RAvel)+6.08)
+        LPWM = 8.52*abs(LAvel)+6.36
+        RPWM = 8.61*abs(RAvel)+6.08
 
-        if(LPWM < 15):
+        scalar = min(255.0/max(LPWM, RPWM), 1)
+
+        LPWM = int(scalar * LPWM)
+        RPWM = int(scalar * RPWM)
+
+        floor = 10
+
+        if(LPWM < floor):
             LPWM = 0 # Floor left
-        elif(LPWM > 255):
-            LPWM = 255 # Ceiling left
-        if(RPWM < 15):
+        if(RPWM < floor):
             RPWM = 0 # Floor right
-        elif(RPWM > 255):
-            RPWM = 255 # Ceiling right
 
         return LPWM, RPWM
 
@@ -163,7 +185,6 @@ class botControl:
                 #self.cmd_vel_callback(self.stopBot)
                 return False
 
-
             data = update['rf_data'].decode().split(' ')[:-1]
             data = [int(x) for x in data]
             # Encoder readings as radians:
@@ -178,10 +199,13 @@ class botControl:
             self.last_encoder_measurementL = encoder_measurementsL
             self.last_encoder_measurementR = encoder_measurementsR
 
+            # oldMeasurement = 5
+
             # If either measurement is old, reset encoder differences
-            if(self.diffEncoderL > 3 or self.diffEncoderR > 3 or self.diffEncoderL < -3 or self.diffEncoderR < -3):
+            if(self.isFirstTime):
                 self.diffEncoderL = 0
                 self.diffEncoderR = 0
+                self.isFirstTime = False
 
             # Calculate changes in theta and distance with respect to the robot frame
             del_theta = ((self.diffEncoderR - self.diffEncoderL) * self.wheel_radius)/(2.0 * self.bot_radius)
