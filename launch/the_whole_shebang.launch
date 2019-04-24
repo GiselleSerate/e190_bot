@@ -5,7 +5,7 @@
 	<node pkg="e190_bot" name="control" type="control.py"/>
 	<!-- <node pkg="e190_bot" name="planTrack" type="point_tracking_server.py"/> -->
 	<node pkg="e190_bot" name="setGoal" type="set_goal_server.py"/>
-	<node pkg="e190_bot" name="pathTrack" type="path_tracking.py"/>
+	<node pkg="e190_bot" name="pathTrack" type="path_tracking.py" output="screen"/>
 
 
 	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" >
@@ -16,4 +16,5 @@
 
 	<node pkg="rviz" type="rviz" name="rviz" args="$(arg rviz_cfg)"/>
 	<node pkg="e190_bot" name="pointTracking" type="pointTracking.py"/>
+
 </launch>

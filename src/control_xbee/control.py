@@ -100,23 +100,6 @@ class botControl:
 
         self.isFirstTime = True
 
-        # command = '$S @'
-        # self.xbee.tx(dest_addr = self.address, data = command)
-        # gotFirstFrame = False
-        # while(not gotFirstFrame):
-        #     try:
-        #         update = self.xbee.wait_read_frame(self.xbeeTimeout)
-        #         gotFirstFrame = True
-        #     except:
-        #         print("Lost connection to odom over xbee.\nRetrying")
-        #         gotFirstFrame = False
-
-        # data = update['rf_data'].decode().split(' ')[:-1]
-        # data = [int(x) for x in data]
-        # # Encoder readings as radians:
-        # self.last_encoder_measurementL = data[4] * np.math.pi / 720.0 # TODO: Until we fix the Teensy code, compensate for switched encoders
-        # self.last_encoder_measurementR = data[3] * np.math.pi / 720.0
-
     def log_init(self,data_logging=False,file_name="log.txt"):
         """Initializes logging of key events."""
         self.data_logging=data_logging
