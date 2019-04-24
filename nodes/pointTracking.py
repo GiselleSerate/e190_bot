@@ -20,6 +20,7 @@ def pointTracking():
     listener = tf.TransformListener()
     rate = rospy.Rate(200.0)
     rospy.sleep(5)
+    stopped = False
 
     reachedBool = Bool();
     reachedBool.data = True
@@ -50,13 +51,17 @@ def pointTracking():
                 angular = .0
                 reachedBool.data = True
             reachedPub.publish(reachedBool)
-
+            
+            # Already stopped. no need to stop further.
+            if (stopped and linear == 0 and angular == 0):
+                continue
 
             # Publish velocity to control.py
             cmd = Twist()
             cmd.linear.x = linear
             cmd.angular.z = angular
             pub.publish(cmd)
+            stopped = (linear == 0 and angular == 0)
             rate.sleep()
         except (tf.LookupException, tf.ConnectivityException):
             pass

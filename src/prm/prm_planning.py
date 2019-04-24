@@ -220,6 +220,15 @@ class prm_planning:
 		while(curr_node.parent != None):
 			self.prm_plan.poses.insert(offset, curr_node.pose())
 			curr_node = curr_node.parent
+
+		last_pose = self.prm_plan.poses[-1]
+
+		quat = quaternion_from_euler(.0, .0, math.atan2(goal_pose.pose.position.y-last_pose.pose.position.y, goal_pose.pose.position.x-last_pose.pose.position.x))
+		goal_pose.pose.orientation.x = quat[0]
+		goal_pose.pose.orientation.y = quat[1]
+		goal_pose.pose.orientation.z = quat[2]
+		goal_pose.pose.orientation.w = quat[3]
+
 		self.prm_plan.poses.append(goal_pose)
 
 		print("I have: " + str(len(self.prm_plan.poses)) + " poses in path planned")

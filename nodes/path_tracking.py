@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, Twist, Vector3
 from e190_bot.srv import *
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 import tf
+import math
 
 class path_tracking():
     def __init__(self):
@@ -21,7 +22,7 @@ class path_tracking():
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         self.rot_cmd = Twist()
-        self.rot_cmd.angular.z = 5
+        self.rot_cmd.angular.z = 1
 
         while not rospy.is_shutdown():
             self.rate.sleep();
@@ -38,6 +39,8 @@ class path_tracking():
 
                 rot_next = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
                 next_orientation = euler_from_quaternion(rot_next)[2]
+
+
                 print("before while")
                 while True:
                     try:
@@ -50,7 +53,7 @@ class path_tracking():
                         print("got transform")
                         curr_orientation = euler_from_quaternion(rot)[2]
 
-                        print("orientation is: ",curr_orientation, next_orientation)
+                        print("orientation is: ", curr_orientation, next_orientation)
 
                         if (abs(next_orientation - curr_orientation) < .1):
                             break;
