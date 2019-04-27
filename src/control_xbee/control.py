@@ -12,6 +12,8 @@ from nav_msgs.msg import Odometry
 from e190_bot.msg import ir_sensor
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
+from E160_PF import *
+
 rospack = rospkg.RosPack()
 
 class botControl:
@@ -97,6 +99,9 @@ class botControl:
         self.last_encoder_measurementL = 0
         self.last_encoder_measurementR = 0
         self.bot_angle = 0
+
+        # TODO
+        self.PF = E160_PF(environment, self.width, self.wheel_radius, self.encoder_resolution)
 
         self.isFirstTime = True
 
@@ -221,6 +226,9 @@ class botControl:
 
             range_measurements = data[:-2] # Range readings (there are 3)
             self.pubRangeSensor(range_measurements)
+
+            # TODO
+            self.state_est = self.PF.LocalizeEstWithParticleFilter(del_s, del_theta, self.range_measurements)
 
         if(self.data_logging):
             self.log_data();
