@@ -1,5 +1,5 @@
 <launch>
-	<arg name="map_file" default="$(find e190_bot)/params/maps/map_demo.yaml"/>
+	<arg name="map_file" default="$(find e190_bot)/params/maps/realmap.yaml"/>
 	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
 
 	<node pkg="e190_bot" name="control" type="control.py"/>

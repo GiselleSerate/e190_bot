@@ -57,9 +57,12 @@ class prm_planning:
 
 		self.rate = rospy.Rate(10)
 		while not rospy.is_shutdown():
-			broadcaster.sendTransform((0,0,0),
+			broadcaster.sendTransform((0, 0, 0),
                 quaternion_from_euler(0, 0, 0),
                 rospy.Time.now(), "/map", "/odom")
+			# broadcaster.sendTransform((1.86454892159, 1.89091300964, 0),
+   #              quaternion_from_euler(0, 0, math.pi),
+   #              rospy.Time.now(), "/map", "/odom")
 			self.rate.sleep();
 
 

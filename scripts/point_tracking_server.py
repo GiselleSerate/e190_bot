@@ -21,6 +21,7 @@ class point_tracking_server():
 
         self.position = (0,0,0)
         self.orientation = quaternion_from_euler(0, 0, 0)
+        self.stopped = False
 
         pts = rospy.Service('point_tracking', point_tracking, self.handle_point_tracking)
 
@@ -67,12 +68,19 @@ class point_tracking_server():
                     angular = .0
                     return point_trackingResponse(True)
 
+                # Already stopped. no need to stop further.
+                if (self.stopped and linear == 0 and angular == 0):
+                    print("already stopped")
+                    continue
+
                 # Publish velocity to control.py
                 cmd = Twist()
                 cmd.linear.x = linear
                 cmd.angular.z = angular
                 print("sending command: %s" % (cmd))
                 self.pub.publish(cmd)
+                self.stopped = (linear == 0 and angular == 0)
+                print("stopped is:", self.stopped)
                 self.rate.sleep()
             except (tf.LookupException, tf.ConnectivityException):
                 return point_trackingResponse(False)
