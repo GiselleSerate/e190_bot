@@ -1,0 +1,8 @@
+class E160_wall:
+
+    
+    def __init__(self, wall_points):
+        
+        # set up walls
+        self.points = wall_points
+        
