@@ -5,10 +5,12 @@ import copy
 from E160_state import*
 from scipy.stats import norm
 
+from statistics import mean
+
 
 class E160_PF:
 
-    def __init__(self, environment, robotWidth, wheel_radius, encoder_resolution):
+    def __init__(self, environment, robotWidth, wheel_radius, encoder_resolution, sensor_orientations): # sensor_orientations: pass array of sensor_orientationlike arrays
         self.particles = []
         self.environment = environment
         self.numParticles = 400
@@ -25,9 +27,11 @@ class E160_PF:
         self.odom_xy_sigma = 1.25   # odometry delta_s s.d
         self.odom_heading_sigma = 0.75  # odometry heading s.d
         self.particle_weight_sum = 0
+        self.variance = 0.02 # TODO tune this variance larger? idk lol
 
         # define the sensor orientations
-        self.sensor_orientation = [-math.pi/2, 0, math.pi/2] # orientations of the sensors on robot
+        # self.sensor_orientation = [-math.pi/2, 0, math.pi/2] # orientations of the sensors on robot
+        self.sensor_orientations = sensor_orientations
         self.walls = self.environment.walls
 
         # initialize the current state
@@ -70,10 +74,10 @@ class E160_PF:
                 delta_heading (float): change in heading as calcualted by odometry
                 sensor_readings([float, float, float]): sensor readings from range fingers
             Return:
-                None''' 
+                estimated position''' 
         for particle in self.particles:
             self.Propagate(delta_s, delta_heading, particle)
-            self.CalculateWeight()
+            self.CalculateWeight(sensor_readings, particle)
         
         
         return self.GetEstimatedPos()
@@ -94,7 +98,7 @@ class E160_PF:
         i.heading = i.heading % (2 * math.pi)
 
 
-    def CalculateWeight(self, sensor_readings, walls, particle):
+    def CalculateWeight(self, sensor_readings, particle):
         '''Calculate the weight of a particular particle
             Args:
                 particle (E160_Particle): a given particle
@@ -104,11 +108,9 @@ class E160_PF:
             return:
                 new weight of the particle (float) '''
 
-        newWeight = 0
-        # add student code here 
+        # TODO if you change the FindMinWallDistance function signature you gotta change this call
+        newWeight = mean([scipy.stats.norm.pdf(sensor_readings[i], self.FindMinWallDistance(particle, self.sensor_orientations[i]), self.variance) for i in range(len(sensor_orientations[]))])
         particle.weight = newWeight
-        # TODO see slides; Gaussian variance
-        # end student code here
         return newWeight
 
     def Resample(self):
@@ -117,14 +119,9 @@ class E160_PF:
                 None
             Return:
                 None'''
-        # add student code here 
-        
-        # TODO resample particles, preferring higher weights
-        # do NOT condense
-        
-        # end student code here
-        
 
+        # TODO not sure if dividing by numParticles is the right move here, what are weights??
+        self.particles = np.random.choice(self.particles, size=self.numParticles, replace=True, p=[particle.weight / self.numParticles for particle in self.particles])
 
 
     def GetEstimatedPos(self):
@@ -132,17 +129,17 @@ class E160_PF:
             Args:
                 None
             Return:
-                None'''
-        # add student code here 
-        
-        # TODO average all particle states to get estimate and return it
-        
-        # end student code here
+                estimated position'''
+
+        # TODO am skeptical about literally averaging all the coordinates but Okay
+        self.state.x = mean([particle.x for particle in self.particles])
+        self.state.y = mean([particle.y for particle in self.particles])
+        self.state.heading = mean([particle.heading for particle in self.particles])
         
         return self.state
 
 
-    def FindMinWallDistance(self, particle, walls, sensorT):
+    def FindMinWallDistance(self, particle, sensorT):
         ''' Given a particle position, walls, and a sensor, find 
             shortest distance to the wall
             Args:
