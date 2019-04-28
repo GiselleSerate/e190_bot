@@ -240,9 +240,14 @@ class botControl:
     def ir_cal(self, val):
         """Convert ir sensor data to meters. The effective range of our sensors
         is from .2m to 1.5m. The best fit at this range was a power curve."""
-        if(val == 0): # Prevent division by 0
-            return 0
-        return 242.76 * (val ** -1.075)
+        if val == 0: # Prevent division by 0
+            return 0.0
+        measured_dist = 242.76 * (val ** -1.075)
+        if measured_dist < .2 or measured_dist > 1.5:
+            return -1.0
+        else:
+            return measured_dist
+
 
     def pubRangeSensor(self, ranges):
         """Publish the sensor recordings"""
