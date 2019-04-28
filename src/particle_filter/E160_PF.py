@@ -29,6 +29,7 @@ class E160_PF:
         self.odom_heading_sigma = 0.75  # odometry heading s.d
         self.particle_weight_sum = 0
         self.variance = 0.02 # TODO tune this variance larger? idk lol
+                             # maybe related to grid map resolution?
 
         # define the sensor orientations
         # self.sensor_orientation = [-math.pi/2, 0, math.pi/2] # orientations of the sensors on robot
@@ -41,16 +42,14 @@ class E160_PF:
 
         # Get the map
         rospy.wait_for_service('static_map')
-		try:
-			map_Service = rospy.ServiceProxy('static_map', GetMap)
-			self.map = map_Service().map
-			self.map_width = self.map.info.width
-			self.map_height = self.map.info.height
-			self.map_res = self.map.info.resolution
-
-			print("Map size: " + str(self.map_res*self.map_width) +" , " + str(self.map_res*self.map_height))
-		except rospy.ServiceException, e:
-			print "Map service call failed: %s"%e
+        try:
+            map_Service = rospy.ServiceProxy('static_map', GetMap)
+            self.map = map_Service().map
+            self.map_width = self.map.info.width
+            self.map_height = self.map.info.height
+            self.map_res = self.map.info.resolution
+        except rospy.ServiceException, e:
+            print "Map service call failed: %s"%e
 
         # TODO: change this later
         self.map_minX = self.map.info.pose.position.x
@@ -123,6 +122,7 @@ class E160_PF:
                 new weight of the particle (float) '''
 
         # TODO if you change the FindMinWallDistance function signature you gotta change this call
+        # TODO make sensor_orientations adaptive
         newWeight = mean([scipy.stats.norm.pdf(sensor_readings[i], self.FindMinWallDistance(particle, self.sensor_orientations[i]), self.variance) for i in range(len(sensor_orientations[]))])
         particle.weight = newWeight
         return newWeight
@@ -161,49 +161,63 @@ class E160_PF:
                 sensorT: orientation of the sensor on the robot (assuming radians)
             Return:
                 distance to the closest wall' (float)'''
-
+        sensorO = sensorT % (2 * math.pi)
         # This is a modified version of the collision function
 
-        # figure out the edge
-        m = math.tan(sensorT)
+        m = math.tan(sensorO)
         b = particle.y - (slope * particle.x)
 
         x2 = 0
         y2 = 0
-        if sensorT > math.pi/2:
-            if b > 0:
-                x2 = 0
-                y2 = b
+        # pick out which side we might hit
+        sideX = self.map_minX if sensorO > math.pi/2 else self.map_maxX
+        sideY = b + (m * sideX)
+
+        # protect against zero divison
+        if not slope:
+            x2 = sideX
+            y2 = sideY
+        else:
+            # pick out which vertical limit we might hit
+            verticalY = self.map_minY if sensorO > math.pi else self.map_maxY
+            verticalX = (verticalY - b)/m
+
+            # if our slope is 0 then we just pick the side value, if 1, then the vert
+            if slope:
+                x2 = verticalX
+                y2 = verticalY
+            # if the X value of the vertical or the Y value of the side value
+            # are not within range, then set x2 and y2 to be the others
+            elif sideY > self.map_maxX or sideY < self.map_minX:
+                x2 = verticalX
+                y2 = verticalY
             else:
+                x2 = sideX
+                y2 = sideY
 
-        elif sensorT == math.pi/2:
-            x2 = particle.x
-            y2 = self.map_maxY
-        elif sensorT == -math.pi/2:
-            x2 = particle.x
-            y2 = self.map_minY
+        grid_i1, grid_j1, grid_id1 = self.pos_to_grid(particle.x, particle.y)
+        grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
 
+        intersectionD = -1 # -1 if no intersection
+        line = bresenham(grid_i1, grid_j1, grid_i2, grid_j2)
+        for k in range(0, len(line)):
+            # Map value 0 - 100
+            if(self.map.data[line[k][1] * self.map_width + line[k][0]] > 85):
+                # get the first collision
+                # (gets distance to middle of gridpoint)
+                xd = abs(particle.x - ((line[k][0] + .5) * self.map_res) + self.map_minX)
+                yd = abs(particle.y - ((line[k][1] + .5) * self.map_res) + self.map_minY)
+                intersection = math.sqrt(math.pow(xd, 2) + math.pow(yd, 2))
+                break
 
-		grid_i1, grid_j1, grid_id1 = self.pos_to_grid(particle.x, particle.y)
-		grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
+        return intersectionD
 
-		line = bresenham(grid_i1, grid_j1, grid_i2, grid_j2)
-		for k in range(0,len(line)):
-
-			#Map value 0 - 100
-			if(self.map.data[line[k][1] * self.map_width + line[k][0]]>85):
-				return False
-
-		return True
-
-        #convert position in meter to map grid id, return grid_x, grid_y and their 1d grid_id
-    	def pos_to_grid(self,poseX,poseY):
-    		grid_i = int((poseX - self.map.info.origin.position.x) / self.map_res);
-    		grid_j = int((poseY - self.map.info.origin.position.y) / self.map_res);
-
-    		grid_id = grid_j * self.map_width + grid_i
-
-    		return grid_i, grid_j, grid_id
+        # convert position in meter to map grid id, return grid_x, grid_y and their 1d grid_id
+    def pos_to_grid(self, poseX, poseY):
+        grid_i = int((poseX - self.map.info.origin.position.x) / self.map_res)
+        grid_j = int((poseY - self.map.info.origin.position.y) / self.map_res)
+        grid_id = grid_j * self.map_width + grid_i
+        return grid_i, grid_j, grid_id
 
 
     def angleDiff(self, ang):
