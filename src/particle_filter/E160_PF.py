@@ -4,6 +4,7 @@ import numpy as np
 import copy
 from E160_state import*
 from scipy.stats import norm
+from e190_bot.prm_planning import bresenham
 
 from statistics import mean
 
@@ -14,14 +15,14 @@ class E160_PF:
         self.particles = []
         self.environment = environment
         self.numParticles = 400
-        
+
         # maybe should just pass in a robot class?
         self.robotWidth = robotWidth
         self.radius = robotWidth/2
         self.wheel_radius = wheel_radius
         self.encoder_resolution = encoder_resolution
         self.FAR_READING = 1000
-        
+
         # PF parameters
         self.IR_sigma = 0.2 # Range finder s.d
         self.odom_xy_sigma = 1.25   # odometry delta_s s.d
@@ -38,16 +39,29 @@ class E160_PF:
         self.state = E160_state()
         self.state.set_state(0,0,0)
 
+        # Get the map
+        rospy.wait_for_service('static_map')
+		try:
+			map_Service = rospy.ServiceProxy('static_map', GetMap)
+			self.map = map_Service().map
+			self.map_width = self.map.info.width
+			self.map_height = self.map.info.height
+			self.map_res = self.map.info.resolution
+
+			print("Map size: " + str(self.map_res*self.map_width) +" , " + str(self.map_res*self.map_height))
+		except rospy.ServiceException, e:
+			print "Map service call failed: %s"%e
+
         # TODO: change this later
-        self.map_maxX = 1.0
-        self.map_minX = -1.0
-        self.map_maxY = 1.0
-        self.map_minY = -1.0
+        self.map_minX = self.map.info.pose.position.x
+        self.map_maxX = self.map_minX + (self.map_width * self.map_res)
+        self.map_minY = self.map.info.pose.position.y
+        self.map_maxY = self.map_minX + (self.map_height * self.map_res)
         self.InitializeParticles()
         self.last_encoder_measurements =[0,0]
 
     def InitializeParticles(self):
-        ''' Populate self.particles with random Particle 
+        ''' Populate self.particles with random Particle
             Args:
                 None
             Return:
@@ -57,7 +71,7 @@ class E160_PF:
             #self.SetRandomStartPos(i)
             self.SetKnownStartPos(i)
 
-            
+
     def SetRandomStartPos(self, i):
         i.x = random.random() * (self.map_maxX - self.map_minX) + self.map_minX
         i.y = random.random() * (self.map_maxY - self.map_minY) + self.map_minY
@@ -66,20 +80,20 @@ class E160_PF:
         i.x = self.state.x
         i.y = self.state.y
         i.theta = self.state.theta
-            
+
     def LocalizeEstWithParticleFilter(self, delta_s, delta_heading, sensor_readings):
         ''' Localize the robot with particle filters. Call everything
-            Args: 
+            Args:
                 delta_s (float): change in distance as calculated by odometry
                 delta_heading (float): change in heading as calcualted by odometry
                 sensor_readings([float, float, float]): sensor readings from range fingers
             Return:
-                estimated position''' 
+                estimated position'''
         for particle in self.particles:
             self.Propagate(delta_s, delta_heading, particle)
             self.CalculateWeight(sensor_readings, particle)
-        
-        
+
+
         return self.GetEstimatedPos()
 
     def Propagate(self, delta_s, delta_heading, i):
@@ -103,8 +117,8 @@ class E160_PF:
             Args:
                 particle (E160_Particle): a given particle
                 sensor_readings ( [float, ...] ): readings from the IR sesnors
-                walls ([ [four doubles], ...] ): positions of the walls from environment, 
-                            represented as 4 doubles 
+                walls ([ [four doubles], ...] ): positions of the walls from environment,
+                            represented as 4 doubles
             return:
                 new weight of the particle (float) '''
 
@@ -125,7 +139,7 @@ class E160_PF:
 
 
     def GetEstimatedPos(self):
-        ''' Calculate the mean of the particles and return it 
+        ''' Calculate the mean of the particles and return it
             Args:
                 None
             Return:
@@ -135,29 +149,62 @@ class E160_PF:
         self.state.x = mean([particle.x for particle in self.particles])
         self.state.y = mean([particle.y for particle in self.particles])
         self.state.heading = mean([particle.heading for particle in self.particles])
-        
+
         return self.state
 
 
     def FindMinWallDistance(self, particle, sensorT):
-        ''' Given a particle position, walls, and a sensor, find 
+        ''' Given a particle position, walls, and a sensor, find
             shortest distance to the wall
             Args:
-                particle (E160_Particle): a particle 
-                walls ([E160_wall, ...]): represents endpoint of the wall 
-                sensorT: orientation of the sensor on the robot
+                particle (E160_Particle): a particle
+                sensorT: orientation of the sensor on the robot (assuming radians)
             Return:
                 distance to the closest wall' (float)'''
-        # add student code here 
-        
-        # TODO for loop over sensors and get min 
-            # leverage Bresneham to find first coordinate where you collide sensor with wall
-            # and then get the distance to it in meters
 
-        # end student code here
-        
-        return 0
-    
+        # This is a modified version of the collision function
+
+        # figure out the edge
+        m = math.tan(sensorT)
+        b = particle.y - (slope * particle.x)
+
+        x2 = 0
+        y2 = 0
+        if sensorT > math.pi/2:
+            if b > 0:
+                x2 = 0
+                y2 = b
+            else:
+
+        elif sensorT == math.pi/2:
+            x2 = particle.x
+            y2 = self.map_maxY
+        elif sensorT == -math.pi/2:
+            x2 = particle.x
+            y2 = self.map_minY
+
+
+		grid_i1, grid_j1, grid_id1 = self.pos_to_grid(particle.x, particle.y)
+		grid_i2, grid_j2, grid_id2 = self.pos_to_grid(x2, y2)
+
+		line = bresenham(grid_i1, grid_j1, grid_i2, grid_j2)
+		for k in range(0,len(line)):
+
+			#Map value 0 - 100
+			if(self.map.data[line[k][1] * self.map_width + line[k][0]]>85):
+				return False
+
+		return True
+
+        #convert position in meter to map grid id, return grid_x, grid_y and their 1d grid_id
+    	def pos_to_grid(self,poseX,poseY):
+    		grid_i = int((poseX - self.map.info.origin.position.x) / self.map_res);
+    		grid_j = int((poseY - self.map.info.origin.position.y) / self.map_res);
+
+    		grid_id = grid_j * self.map_width + grid_i
+
+    		return grid_i, grid_j, grid_id
+
 
     def angleDiff(self, ang):
         ''' Wrap angles between -pi and pi'''
@@ -176,6 +223,3 @@ class E160_PF:
 
         def __str__(self):
             return str(self.x) + " " + str(self.y) + " " + str(self.heading) + " " + str(self.weight)
-
-
-
