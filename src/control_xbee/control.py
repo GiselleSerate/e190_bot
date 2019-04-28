@@ -12,7 +12,7 @@ from nav_msgs.msg import Odometry
 from e190_bot.msg import ir_sensor
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-from E160_PF import *
+from e190_bot.src.particle_filter.E160_PF import *
 
 rospack = rospkg.RosPack()
 
@@ -101,7 +101,7 @@ class botControl:
         self.bot_angle = 0
 
         # TODO
-        self.PF = E160_PF(environment, self.width, self.wheel_radius, self.encoder_resolution)
+        self.PF = E160_PF(self.width, self.wheel_radius, self.encoder_resolution)
 
         self.isFirstTime = True
 
@@ -225,6 +225,7 @@ class botControl:
             self.pubOdom.publish(self.Odom) # Publish in /odom topic
 
             range_measurements = data[:-2] # Range readings (there are 3)
+            range_measurements = [self.ir_cal(val) for val in range_measurements]
             self.pubRangeSensor(range_measurements)
 
             # TODO
@@ -251,9 +252,9 @@ class botControl:
 
     def pubRangeSensor(self, ranges):
         """Publish the sensor recordings"""
-        self.ir_L.distance = self.ir_cal(ranges[1])
-        self.ir_C.distance = self.ir_cal(ranges[0])
-        self.ir_R.distance = self.ir_cal(ranges[2])
+        self.ir_L.distance = ranges[1]
+        self.ir_C.distance = ranges[0]
+        self.ir_R.distance = ranges[2]
 
         self.pubDistL.publish(self.ir_L)
         self.pubDistC.publish(self.ir_C)

@@ -2,18 +2,17 @@ import math
 import random
 import numpy as np
 import copy
-from E160_state import*
+from e190_bot.src.particle_filter.E160_state import*
 from scipy.stats import norm
-from e190_bot.prm_planning import bresenham
+from e190_bot.src.prm.prm_planning import bresenham
 
 from statistics import mean
 
 
 class E160_PF:
 
-    def __init__(self, environment, robotWidth, wheel_radius, encoder_resolution, sensor_orientations): # sensor_orientations: pass array of sensor_orientationlike arrays
+    def __init__(self, robotWidth, wheel_radius, encoder_resolution, sensor_orientations): # sensor_orientations: pass array of sensor_orientationlike arrays
         self.particles = []
-        self.environment = environment
         self.numParticles = 400
 
         # maybe should just pass in a robot class?
@@ -34,7 +33,6 @@ class E160_PF:
         # define the sensor orientations
         # self.sensor_orientation = [-math.pi/2, 0, math.pi/2] # orientations of the sensors on robot
         self.sensor_orientations = sensor_orientations
-        self.walls = self.environment.walls
 
         # initialize the current state
         self.state = E160_state()
@@ -122,7 +120,13 @@ class E160_PF:
                 new weight of the particle (float) '''
 
         # TODO if you change the FindMinWallDistance function signature you gotta change this call
-        newWeight = mean([scipy.stats.norm.pdf(sensor_readings[i], self.FindMinWallDistance(particle, self.sensor_orientations[i]), self.variance) for i in range(len(sensor_orientations[]))])
+        weights = []
+        for i in range(len(sensor_orientations)):
+            wall_dist = self.FindMinWallDistance(particle, self.sensor_orientations[i])
+            # if weight > 0 and sensor_readings[i] > 0:
+            weights.append(scipy.stats.norm.pdf(sensor_readings[i], wall_dist, self.variance))
+
+        newWeight = mean(weights)
         particle.weight = newWeight
         return newWeight
 
@@ -160,8 +164,11 @@ class E160_PF:
                 sensorT: orientation of the sensor on the robot (assuming radians)
             Return:
                 distance to the closest wall' (float)'''
-        sensorO = sensorT % (2 * math.pi)
+        sensorO = (particle.heading + sensorT) % (2 * math.pi)
         # This is a modified version of the collision function
+
+        if (particle.x >= self.map_maxX or particle.x < self.map_minX or particle.y >= self.map_maxY or particle.y < self.map_minY):
+            return -1
 
         m = math.tan(sensorO)
         b = particle.y - (slope * particle.x)
