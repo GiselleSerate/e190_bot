@@ -122,7 +122,6 @@ class E160_PF:
                 new weight of the particle (float) '''
 
         # TODO if you change the FindMinWallDistance function signature you gotta change this call
-        # TODO make sensor_orientations adaptive
         newWeight = mean([scipy.stats.norm.pdf(sensor_readings[i], self.FindMinWallDistance(particle, self.sensor_orientations[i]), self.variance) for i in range(len(sensor_orientations[]))])
         particle.weight = newWeight
         return newWeight

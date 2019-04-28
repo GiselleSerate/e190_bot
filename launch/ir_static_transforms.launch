@@ -1,0 +1,12 @@
+<!-- Publishes static transfroms for IR sensors -->
+
+<launch>
+  <node pkg="tf" type="static_transform_publisher" name="base2laser_bcast"
+    args= "0.08 0.0 0.09 0.0 1.570796 0.0 /irF base_link 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="base2laser_bcast"
+    args= "0.08 0.0 0.09 -1.570796 1.570796 0.0 /irL base_link 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="base2laser_bcast"
+    args= "0.08 0.0 0.09 1.570796 1.570796 0.0 /irR base_link 100" />
+</launch>
