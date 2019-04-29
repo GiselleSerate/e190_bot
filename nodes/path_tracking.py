@@ -21,8 +21,9 @@ class path_tracking():
         self.listener = tf.TransformListener()
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
+        self.rot_speed = 0.7
         self.rot_cmd = Twist()
-        self.rot_cmd.angular.z = 1
+        self.rot_cmd.angular.z = self.rot_speed
 
         while not rospy.is_shutdown():
             self.rate.sleep();
@@ -55,10 +56,10 @@ class path_tracking():
 
                         print("orientation is: ", curr_orientation, next_orientation)
 
-                        if (next_orientation - curr_orientation) % (2*math.pi) > math.pi:
-                            self.rot_cmd.angular.z = 1
+                        if (next_orientation - curr_orientation) % (2*math.pi) < math.pi:
+                            self.rot_cmd.angular.z = self.rot_speed
                         else:
-                            self.rot_cmd.angular.z = -1
+                            self.rot_cmd.angular.z = -self.rot_speed
 
                         if (abs(next_orientation - curr_orientation) < .1):
                             break;
