@@ -222,7 +222,6 @@ class E160_PF:
         weights = []
         for i in range(len(self.sensor_orientations)):
             wall_dist = self.FindMinWallDistance(particle, self.sensor_orientations[i])
-            print("wall_dist:",wall_dist)
             if wall_dist > 0 and sensor_readings[i] > 0:
                 weights.append(norm.pdf(sensor_readings[i], wall_dist, self.variance))
             elif wall_dist > 0 and sensor_readings[i] < 0:

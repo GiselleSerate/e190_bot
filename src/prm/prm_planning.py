@@ -222,6 +222,16 @@ class prm_planning:
 		curr_node = nodes[-1]
 		while(curr_node.parent != None):
 			self.prm_plan.poses.insert(offset, curr_node.pose())
+			# if the distance to the parent node is too long, divide it
+			numSubdivisions = int((((curr_node.y - curr_node.parent.y) ** 2 + (curr_node.x - curr_node.parent.x) ** 2) ** 0.5) / 0.5)
+			for i in range(1, numSubdivisions):
+				# generate and insert intermediate node
+				xSeg = (curr_node.parent.x-curr_node.x)/numSubdivisions
+				ySeg = (curr_node.parent.y-curr_node.y)/numSubdivisions
+				generatedNode = PRM_Node(x=curr_node.x + xSeg * i, y=curr_node.y + ySeg * i)
+				curr_node.parent.addChild(generatedNode)
+				curr_node = generatedNode
+				self.prm_plan.poses.insert(offset, generatedNode.pose())
 			curr_node = curr_node.parent
 
 		last_pose = self.prm_plan.poses[-1]

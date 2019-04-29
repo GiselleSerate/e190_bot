@@ -2,7 +2,7 @@
 	<arg name="map_file" default="$(find e190_bot)/params/maps/realmap.yaml"/>
 	<arg name="rviz_cfg" default="-d $(find e190_bot)/params/rviz/prm_rviz.rviz" />
 
-	<node pkg="e190_bot" name="control" type="control.py" output="screen"/>
+	<node pkg="e190_bot" name="control" type="control.py"/>
 	<include file="$(find e190_bot)/launch/ir_static_transforms.launch"/>
 	<!-- <node pkg="e190_bot" name="planTrack" type="point_tracking_server.py"/> -->
 	<node pkg="e190_bot" name="setGoal" type="set_goal_server.py"/>
