@@ -24,6 +24,6 @@
     <remap from="/camera_info" to="$(arg camera)/camera_info"/>
   </node>
   <node pkg="e190_bot" name="control_py" type="control.py"/>
-  <!-- <node pkg="e190_bot" name="steering" type="steering.py"/> -->
+  <node pkg="e190_bot" name="steering" type="steering.py"/>
   <node pkg="rviz" type="rviz" name="rviz"/>
 </launch>
