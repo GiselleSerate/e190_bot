@@ -55,6 +55,11 @@ class path_tracking():
 
                         print("orientation is: ", curr_orientation, next_orientation)
 
+                        if (next_orientation - curr_orientation) % (2*math.pi) > math.pi:
+                            self.rot_cmd.angular.z = 1
+                        else:
+                            self.rot_cmd.angular.z = -1
+
                         if (abs(next_orientation - curr_orientation) < .1):
                             break;
                         else:
