@@ -13,13 +13,13 @@ ka = 0.7
 kb = -1.0
 
 # seems good
-kp = 0.5
-ka = -0.7
-kb = -2.0
+# kp = 0.5
+# ka = -0.7
+# kb = -2.0
 
-kp = 0.5
-ka = -0.7
-kb = -3.0
+# kp = 0.5
+# ka = -0.7
+# kb = -3.0
 
 def pointTracking():
     print("in pointTracking\n");
@@ -67,8 +67,8 @@ def pointTracking():
 
             # Publish velocity to control.py
             cmd = Twist()
-            cmd.linear.x = linear
-            cmd.angular.z = angular
+            cmd.linear.x = linear / 2.0
+            cmd.angular.z = angular / 2.0
             pub.publish(cmd)
             stopped = (linear == 0 and angular == 0)
             rate.sleep()

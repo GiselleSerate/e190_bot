@@ -123,8 +123,8 @@ class E160_PF:
         weights = []
         for i in range(len(sensor_orientations)):
             wall_dist = self.FindMinWallDistance(particle, self.sensor_orientations[i])
-            # if weight > 0 and sensor_readings[i] > 0:
-            weights.append(scipy.stats.norm.pdf(sensor_readings[i], wall_dist, self.variance))
+            if wall_dist > 0 and sensor_readings[i] > 0:
+                weights.append(scipy.stats.norm.pdf(sensor_readings[i], wall_dist, self.variance))
 
         newWeight = mean(weights)
         particle.weight = newWeight
