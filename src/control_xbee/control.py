@@ -28,7 +28,7 @@ class E160_state:
 
     def __init__(self):
         self.set_state(0,0,0)
-        
+
     def set_state(self,x,y,theta):
         self.x = x
         self.y = y
@@ -116,7 +116,7 @@ class E160_PF:
         self.IR_sigma = 0.2 # Range finder s.d
         self.odom_xy_sigma = 1.25   # odometry delta_s s.d
         self.odom_heading_sigma = 0.75  # odometry heading s.d
-        self.odom_wheel_sigma = 0.05
+        self.odom_wheel_sigma = 0.01
         self.particle_weight_sum = 0
         self.variance = 0.02 # TODO tune this variance larger? idk lol
                              # maybe related to grid map resolution?
@@ -224,15 +224,17 @@ class E160_PF:
             wall_dist = self.FindMinWallDistance(particle, self.sensor_orientations[i])
             if wall_dist > 0 and sensor_readings[i] > 0:
                 weights.append(norm.pdf(sensor_readings[i], wall_dist, self.variance))
-            elif wall_dist > 0 and sensor_readings[i] < 0:
-                # This is okay. maybe the sensor is bugged out for a second.
-                weights.append(norm.pdf(wall_dist + self.variance, wall_dist, self.variance))
-            else:
-                # less good
-                weights.append(norm.pdf(wall_dist + 2 * self.variance, wall_dist, self.variance))
+            # elif wall_dist > 0 and sensor_readings[i] < 0:
+            #     # This is okay. maybe the sensor is bugged out for a second.
+            #     weights.append(norm.pdf(wall_dist + self.variance, wall_dist, self.variance))
+            # else:
+            #     # less good
+            #     weights.append(norm.pdf(wall_dist + 2 * self.variance, wall_dist, self.variance))
 
-
-        newWeight = mean(weights)
+        if len(weights) != 0:
+            newWeight = mean(weights)
+        else:
+            newWeight = norm.pdf(self.variance/2, 0, self.variance)
         particle.weight = newWeight
         return newWeight
 
@@ -638,5 +640,3 @@ if __name__ == '__main__':
 
     except rospy.ROSInterruptException:
         pass
-
-
